@@ -1,20 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { parse, compareAsc } from 'date-fns';
 
-const EventForm = ({ selectedDate, events, onAdd }) => {
+const EventForm = ({ selectedDate, events, onAdd, onDelete, onUpdate }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [time, setTime] = useState('');
   const [warning, setWarning] = useState('');
+  const [editingIndex, setEditingIndex] = useState(null);
 
   useEffect(() => {
     setTitle('');
     setDescription('');
     setTime('');
     setWarning('');
+    setEditingIndex(null);
   }, [selectedDate]);
 
-  // Filter and sort events for selected date
   const eventsForDate = events
     .filter(e => e.date === selectedDate)
     .sort((a, b) =>
@@ -32,18 +33,67 @@ const EventForm = ({ selectedDate, events, onAdd }) => {
       return;
     }
 
-    const conflict = eventsForDate.find(e => e.time === time);
-    if (conflict) {
-      setWarning(`An event already exists at ${time}: "${conflict.title}"`);
+    const isDuplicateTime = eventsForDate.some((e, idx) =>
+      e.time === time && idx !== editingIndex
+    );
+
+    if (isDuplicateTime) {
+      setWarning(`An event already exists at ${time}.`);
       return;
     }
 
-    // No conflict, add event
-    onAdd({ date: selectedDate, title, description, time });
+    const newEvent = { date: selectedDate, title, description, time };
+
+    if (editingIndex !== null) {
+      const originalEvent = eventsForDate[editingIndex];
+      const globalIndex = events.findIndex(
+        e =>
+          e.date === selectedDate &&
+          e.title === originalEvent.title &&
+          e.time === originalEvent.time &&
+          e.description === originalEvent.description
+      );
+      if (globalIndex !== -1) {
+        onUpdate(globalIndex, newEvent);
+      }
+    } else {
+      onAdd(newEvent);
+    }
+
     setTitle('');
     setDescription('');
     setTime('');
     setWarning('');
+    setEditingIndex(null);
+  };
+
+  const handleEdit = (index) => {
+    const e = eventsForDate[index];
+    setTitle(e.title);
+    setDescription(e.description);
+    setTime(e.time);
+    setEditingIndex(index);
+    setWarning('');
+  };
+
+  const handleDelete = (index) => {
+    const eventToDelete = eventsForDate[index];
+    const globalIndex = events.findIndex(
+      e =>
+        e.date === selectedDate &&
+        e.title === eventToDelete.title &&
+        e.time === eventToDelete.time &&
+        e.description === eventToDelete.description
+    );
+    if (globalIndex !== -1) {
+      onDelete(globalIndex);
+    }
+    if (editingIndex === index) {
+      setTitle('');
+      setDescription('');
+      setTime('');
+      setEditingIndex(null);
+    }
   };
 
   return (
@@ -60,16 +110,33 @@ const EventForm = ({ selectedDate, events, onAdd }) => {
             <ul className="mb-4 space-y-3">
               {eventsForDate.map((e, i) => (
                 <li key={i} className="border p-2 rounded bg-gray-50">
-                  <div className="text-sm font-medium text-green-800">
-                    {e.time} - {e.title}
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="text-sm font-medium text-green-800">
+                        {e.time} - {e.title}
+                      </div>
+                      <p className="text-sm text-gray-600">{e.description}</p>
+                    </div>
+                    <div className="flex gap-2 ml-4">
+                      <button
+                        className="text-blue-600 text-xs underline"
+                        onClick={() => handleEdit(i)}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        className="text-red-600 text-xs underline"
+                        onClick={() => handleDelete(i)}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
-                  <p className="text-sm text-gray-600">{e.description}</p>
                 </li>
               ))}
             </ul>
           )}
 
-          {/* Add new event */}
           <form onSubmit={handleSubmit} className="space-y-3">
             {warning && (
               <div className="text-red-600 text-sm font-medium">{warning}</div>
@@ -110,7 +177,7 @@ const EventForm = ({ selectedDate, events, onAdd }) => {
               type="submit"
               className="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700"
             >
-              Add Event
+              {editingIndex !== null ? 'Update Event' : 'Add Event'}
             </button>
           </form>
         </>
