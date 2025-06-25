@@ -4,8 +4,13 @@ import Calendar from './components/Calendar';
 
 const App = () => {
   const [events, setEvents] = useState([
-    { date: '2025-06-25', title: 'Demo', description: 'Product demo with client' },
-    { date: '2025-06-28', title: 'Meeting', description: 'Internal planning meeting' },
+{
+  date: '2025-06-27',
+  title: 'Doctor Appointment',
+  description: 'Annual check-up',
+  time: '10:15'
+}
+,
   ]);
 
   const [selectedDate, setSelectedDate] = useState(null);
