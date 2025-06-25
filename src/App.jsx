@@ -19,6 +19,20 @@ const App = () => {
     setEvents([...events, event]);
   };
 
+  const handleUpdateEvent = (index, updatedEvent) => {
+  const updated = [...events];
+  updated[index] = updatedEvent;
+  setEvents(updated);
+};
+
+const handleDeleteEvent = (index) => {
+  const updated = [...events];
+  updated.splice(index, 1);
+  setEvents(updated);
+};
+
+  
+
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <h1 className="text-3xl font-bold text-center mb-6">📅 Event Calendar</h1>
@@ -37,6 +51,8 @@ const App = () => {
             selectedDate={selectedDate}
             events={events}
             onAdd={handleAddEvent}
+            onUpdate={handleUpdateEvent}
+            onDelete={handleDeleteEvent}
           />
         </div>
       </div>
