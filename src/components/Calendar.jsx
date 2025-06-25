@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   startOfMonth,
   endOfMonth,
@@ -10,57 +10,93 @@ import {
   format,
 } from 'date-fns';
 
-const Calendar = ({ events }) => {
+const Calendar = ({ events, selectedDate, onDateClick }) => {
   const today = new Date();
-  const monthStart = startOfMonth(today);
+  const [monthStart, setMonthStart] = useState(startOfMonth(today));
+
   const monthEnd = endOfMonth(monthStart);
   const startDate = startOfWeek(monthStart);
   const endDate = endOfWeek(monthEnd);
 
+  const handlePrevMonth = () => {
+    setMonthStart(prev => startOfMonth(addDays(prev, -1)));
+  };
+
+  const handleNextMonth = () => {
+    setMonthStart(prev => startOfMonth(addDays(endOfMonth(prev), 1)));
+  };
+
+  const handleToday = () => {
+    setMonthStart(startOfMonth(today));
+  };
+
+  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const rows = [];
   let days = [];
-  let day = startDate;
+  let currentDay = startDate;
 
-  while (day <= endDate) {
+  while (currentDay <= endDate) {
     for (let i = 0; i < 7; i++) {
-      const dateString = format(day, 'yyyy-MM-dd');
-      const event = events.find(e => e.date === dateString);
-      const isToday = isSameDay(day, today);
-      const inMonth = isSameMonth(day, monthStart);
+      const dateString = format(currentDay, 'yyyy-MM-dd');
+      const isToday = isSameDay(currentDay, today);
+      const inMonth = isSameMonth(currentDay, monthStart);
+      const isSelected = selectedDate && isSameDay(currentDay, new Date(selectedDate));
+      const dayEvents = events.filter(e => e.date === dateString);
 
       days.push(
         <div
-          key={day}
-          className={`p-2 border rounded h-24 text-sm flex flex-col ${
-            isToday ? 'bg-blue-100 font-bold' : inMonth ? 'bg-white' : 'bg-gray-200 text-gray-500'
-          }`}
+          key={dateString}
+          onClick={() => onDateClick(dateString)}
+          className={`cursor-pointer p-2 border rounded h-24 text-sm flex flex-col overflow-hidden hover:bg-blue-50
+            ${isSelected
+              ? 'bg-yellow-200 border-yellow-500 font-semibold'
+              : isToday
+              ? 'bg-blue-100 font-bold'
+              : inMonth
+              ? 'bg-white'
+              : 'bg-gray-200 text-gray-500'
+            }`}
         >
-          <span>{format(day, 'd')}</span>
-          {event && <span className="mt-auto text-xs text-green-600">{event.title}</span>}
+          <span className="mb-1">{format(currentDay, 'd')}</span>
+          <div className="mt-auto space-y-0.5 overflow-hidden text-xs">
+            {dayEvents.slice(0, 2).map((event, i) => (
+              <div key={i} className="text-green-700 truncate">{event.title}</div>
+            ))}
+            {dayEvents.length > 2 && (
+              <div className="text-gray-400 text-xs">+{dayEvents.length - 2} more</div>
+            )}
+          </div>
         </div>
       );
-      day = addDays(day, 1);
+
+      currentDay = addDays(currentDay, 1);
     }
+
     rows.push(
-      <div key={day} className="grid grid-cols-7 gap-2 mb-1">
+      <div key={currentDay} className="grid grid-cols-7 gap-2 mb-1">
         {days}
       </div>
     );
     days = [];
   }
 
-  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
   return (
-    <div className="bg-white p-4 rounded shadow w-3/4">
-        <button>{`<`}</button>
-        <button>Today</button>
-        <button>{`>`}</button>
+    <div className="bg-white p-4 rounded shadow w-full">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-4">
+          <button onClick={handlePrevMonth} className="px-2 py-1 border rounded">{`<`}</button>
+          <h2 className="font-bold text-lg">{format(monthStart, 'MMMM yyyy')}</h2>
+          <button onClick={handleNextMonth} className="px-2 py-1 border rounded">{`>`}</button>
+        </div>
+        <button onClick={handleToday} className="px-3 py-1 border rounded text-sm">Today</button>
+      </div>
+
       <div className="grid grid-cols-7 text-center font-semibold mb-2">
         {weekDays.map(day => (
           <div key={day}>{day}</div>
         ))}
       </div>
+
       {rows}
     </div>
   );
