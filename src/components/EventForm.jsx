@@ -5,23 +5,14 @@ const EventForm = ({ selectedDate, events, onAdd }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [time, setTime] = useState('');
+  const [warning, setWarning] = useState('');
 
   useEffect(() => {
-    // Clear inputs when a new date is selected
     setTitle('');
     setDescription('');
     setTime('');
+    setWarning('');
   }, [selectedDate]);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!title || !description || !time || !selectedDate) return;
-
-    onAdd({ date: selectedDate, title, description, time });
-    setTitle('');
-    setDescription('');
-    setTime('');
-  };
 
   // Filter and sort events for selected date
   const eventsForDate = events
@@ -33,6 +24,28 @@ const EventForm = ({ selectedDate, events, onAdd }) => {
       )
     );
 
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    if (!title || !description || !time || !selectedDate) {
+      setWarning('All fields are required.');
+      return;
+    }
+
+    const conflict = eventsForDate.find(e => e.time === time);
+    if (conflict) {
+      setWarning(`An event already exists at ${time}: "${conflict.title}"`);
+      return;
+    }
+
+    // No conflict, add event
+    onAdd({ date: selectedDate, title, description, time });
+    setTitle('');
+    setDescription('');
+    setTime('');
+    setWarning('');
+  };
+
   return (
     <div>
       {selectedDate ? (
@@ -41,7 +54,6 @@ const EventForm = ({ selectedDate, events, onAdd }) => {
             Events on {selectedDate}
           </h2>
 
-          {/* Existing events */}
           {eventsForDate.length === 0 ? (
             <p className="text-gray-500 mb-4">No events yet for this date.</p>
           ) : (
@@ -59,6 +71,10 @@ const EventForm = ({ selectedDate, events, onAdd }) => {
 
           {/* Add new event */}
           <form onSubmit={handleSubmit} className="space-y-3">
+            {warning && (
+              <div className="text-red-600 text-sm font-medium">{warning}</div>
+            )}
+
             <div>
               <label className="block text-sm font-medium mb-1">Title</label>
               <input
