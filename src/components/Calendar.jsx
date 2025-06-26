@@ -20,7 +20,7 @@ import {
   parseISO,
 } from 'date-fns';
 
-const Calendar = ({ events, selectedDate, onDateClick }) => {
+const Calendar = ({ events, selectedDate, onDateClick, onEventDrop }) => {
   const today = new Date();
   const [monthStart, setMonthStart] = useState(startOfMonth(today));
 
@@ -44,6 +44,9 @@ const Calendar = ({ events, selectedDate, onDateClick }) => {
   const rows = [];
   let days = [];
   let currentDay = startDate;
+
+  // Drag state
+  const [draggedEvent, setDraggedEvent] = useState(null);
 
   function occursOnDate(event, dateStr) {
     const { recurrence } = event;
@@ -116,11 +119,27 @@ const Calendar = ({ events, selectedDate, onDateClick }) => {
               ? 'bg-white'
               : 'bg-gray-200 text-gray-500'
           }`}
+          // Drag-and-drop handlers
+          onDragOver={e => e.preventDefault()}
+          onDrop={e => {
+            e.preventDefault();
+            if (draggedEvent) {
+              onEventDrop(draggedEvent, dateString);
+              setDraggedEvent(null);
+            }
+          }}
         >
           <span className="mb-1 text-sm">{format(currentDay, 'd')}</span>
           <div className="mt-auto space-y-0.5 overflow-y-auto text-[11px] max-h-20 pr-1">
             {dayEvents.slice(0, 3).map((event, i) => (
-              <div key={i} className="text-green-800 truncate">
+              <div
+                key={i}
+                className="text-green-800 truncate"
+                draggable
+                onDragStart={() => setDraggedEvent(event)}
+                onDragEnd={() => setDraggedEvent(null)}
+                title={event.title}
+              >
                 {event.title}
               </div>
             ))}
