@@ -4,8 +4,13 @@ import Calendar from './components/Calendar';
 
 const App = () => {
   const [events, setEvents] = useState([
-    { date: '2025-06-25', title: 'Demo', description: 'Product demo with client' },
-    { date: '2025-06-28', title: 'Meeting', description: 'Internal planning meeting' },
+{
+  date: '2025-06-27',
+  title: 'Doctor Appointment',
+  description: 'Annual check-up',
+  time: '10:15'
+}
+,
   ]);
 
   const [selectedDate, setSelectedDate] = useState(null);
@@ -13,6 +18,20 @@ const App = () => {
   const handleAddEvent = (event) => {
     setEvents([...events, event]);
   };
+
+  const handleUpdateEvent = (index, updatedEvent) => {
+  const updated = [...events];
+  updated[index] = updatedEvent;
+  setEvents(updated);
+};
+
+const handleDeleteEvent = (index) => {
+  const updated = [...events];
+  updated.splice(index, 1);
+  setEvents(updated);
+};
+
+  
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
@@ -32,6 +51,8 @@ const App = () => {
             selectedDate={selectedDate}
             events={events}
             onAdd={handleAddEvent}
+            onUpdate={handleUpdateEvent}
+            onDelete={handleDeleteEvent}
           />
         </div>
       </div>

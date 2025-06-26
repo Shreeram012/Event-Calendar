@@ -8,6 +8,8 @@ import {
   isSameDay,
   isSameMonth,
   format,
+  parse,
+  compareAsc,
 } from 'date-fns';
 
 const Calendar = ({ events, selectedDate, onDateClick }) => {
@@ -41,29 +43,39 @@ const Calendar = ({ events, selectedDate, onDateClick }) => {
       const isToday = isSameDay(currentDay, today);
       const inMonth = isSameMonth(currentDay, monthStart);
       const isSelected = selectedDate && isSameDay(currentDay, new Date(selectedDate));
-      const dayEvents = events.filter(e => e.date === dateString);
+
+      const dayEvents = events
+        .filter(e => e.date === dateString)
+        .sort((a, b) =>
+          compareAsc(
+            parse(a.time, 'HH:mm', new Date()),
+            parse(b.time, 'HH:mm', new Date())
+          )
+        );
 
       days.push(
         <div
           key={dateString}
           onClick={() => onDateClick(dateString)}
-          className={`cursor-pointer p-2 border rounded h-24 text-sm flex flex-col overflow-hidden hover:bg-blue-50
-            ${isSelected
+          className={`cursor-pointer p-2 border rounded h-28 text-xs flex flex-col hover:bg-blue-50 overflow-hidden ${
+            isSelected
               ? 'bg-yellow-200 border-yellow-500 font-semibold'
               : isToday
               ? 'bg-blue-100 font-bold'
               : inMonth
               ? 'bg-white'
               : 'bg-gray-200 text-gray-500'
-            }`}
+          }`}
         >
-          <span className="mb-1">{format(currentDay, 'd')}</span>
-          <div className="mt-auto space-y-0.5 overflow-hidden text-xs">
-            {dayEvents.slice(0, 2).map((event, i) => (
-              <div key={i} className="text-green-700 truncate">{event.title}</div>
+          <span className="mb-1 text-sm">{format(currentDay, 'd')}</span>
+          <div className="mt-auto space-y-0.5 overflow-y-auto text-[11px] max-h-20 pr-1">
+            {dayEvents.slice(0, 3).map((event, i) => (
+              <div key={i} className="text-green-800 truncate">
+                {event.title}
+              </div>
             ))}
-            {dayEvents.length > 2 && (
-              <div className="text-gray-400 text-xs">+{dayEvents.length - 2} more</div>
+            {dayEvents.length > 3 && (
+              <div className="text-gray-400 text-[10px]">+{dayEvents.length - 3} more</div>
             )}
           </div>
         </div>
