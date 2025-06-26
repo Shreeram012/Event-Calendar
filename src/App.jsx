@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import EventForm from './components/EventForm';
 import Calendar from './components/Calendar';
+import { parseISO } from 'date-fns';
 
 const App = () => {
   const [events, setEvents] = useState([
@@ -31,7 +32,71 @@ const handleDeleteEvent = (index) => {
   setEvents(updated);
 };
 
-  
+  // Helper to check for event conflicts (including recurring)
+  function occursOnDate(event, dateStr) {
+    const { recurrence } = event;
+    if (!recurrence || !recurrence.type || recurrence.type === 'none') return event.date === dateStr;
+
+    const eventStart = parseISO(event.date);
+    const checkDate = parseISO(dateStr);
+
+    if (recurrence.endDate && checkDate > parseISO(recurrence.endDate)) return false;
+    if (checkDate < eventStart) return false;
+
+    switch (recurrence.type) {
+      case 'daily':
+        return (checkDate - eventStart) / (1000 * 60 * 60 * 24) >= 0;
+      case 'weekly':
+        return (
+          ((checkDate - eventStart) / (1000 * 60 * 60 * 24 * 7) >= 0) &&
+          recurrence.daysOfWeek &&
+          recurrence.daysOfWeek.includes(checkDate.getDay())
+        );
+      case 'monthly':
+        return checkDate.getDate() === eventStart.getDate();
+      case 'custom': {
+        let diff;
+        if (recurrence.unit === 'day') {
+          diff = (checkDate - eventStart) / (1000 * 60 * 60 * 24);
+        } else if (recurrence.unit === 'week') {
+          diff = (checkDate - eventStart) / (1000 * 60 * 60 * 24 * 7);
+        } else if (recurrence.unit === 'month') {
+          diff = (checkDate.getFullYear() - eventStart.getFullYear()) * 12 + (checkDate.getMonth() - eventStart.getMonth());
+        }
+        return diff >= 0 && diff % recurrence.interval === 0;
+      }
+      default:
+        return false;
+    }
+  }
+
+  // Drag-and-drop event handler
+  const handleEventDrop = (event, newDate) => {
+    // Prevent moving recurring events (optional, or handle as you wish)
+    if (event.recurrence && event.recurrence.type !== 'none') {
+      alert('Recurring events cannot be rescheduled by drag-and-drop.');
+      return;
+    }
+
+    // Check for time conflict on newDate
+    const hasConflict = events.some(e =>
+      (e.date === newDate || occursOnDate(e, newDate)) &&
+      e.time === event.time &&
+      e !== event
+    );
+    if (hasConflict) {
+      alert('There is already an event at this time on the selected day.');
+      return;
+    }
+
+    // Update event date
+    const idx = events.indexOf(event);
+    if (idx !== -1) {
+      const updated = [...events];
+      updated[idx] = { ...event, date: newDate };
+      setEvents(updated);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
@@ -43,6 +108,7 @@ const handleDeleteEvent = (index) => {
             events={events}
             selectedDate={selectedDate}
             onDateClick={setSelectedDate}
+            onEventDrop={handleEventDrop}
           />
         </div>
 
