@@ -1,12 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { parse, compareAsc } from 'date-fns';
 
+const recurrenceDefaults = {
+  type: 'none', 
+  daysOfWeek: [], 
+  interval: 1, 
+  unit: 'day', 
+  endDate: '', 
+};
+
 const EventForm = ({ selectedDate, events, onAdd, onDelete, onUpdate }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [time, setTime] = useState('');
   const [warning, setWarning] = useState('');
   const [editingIndex, setEditingIndex] = useState(null);
+  const [recurrence, setRecurrence] = useState(recurrenceDefaults);
 
   useEffect(() => {
     setTitle('');
@@ -14,6 +23,7 @@ const EventForm = ({ selectedDate, events, onAdd, onDelete, onUpdate }) => {
     setTime('');
     setWarning('');
     setEditingIndex(null);
+    setRecurrence(recurrenceDefaults);
   }, [selectedDate]);
 
   const eventsForDate = events
@@ -42,7 +52,7 @@ const EventForm = ({ selectedDate, events, onAdd, onDelete, onUpdate }) => {
       return;
     }
 
-    const newEvent = { date: selectedDate, title, description, time };
+    const newEvent = { date: selectedDate, title, description, time, recurrence };
 
     if (editingIndex !== null) {
       const originalEvent = eventsForDate[editingIndex];
@@ -72,6 +82,7 @@ const EventForm = ({ selectedDate, events, onAdd, onDelete, onUpdate }) => {
     setTitle(e.title);
     setDescription(e.description);
     setTime(e.time);
+    setRecurrence(e.recurrence || recurrenceDefaults);
     setEditingIndex(index);
     setWarning('');
   };
@@ -172,6 +183,82 @@ const EventForm = ({ selectedDate, events, onAdd, onDelete, onUpdate }) => {
                 className="w-full border px-3 py-2 rounded text-sm"
               />
             </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Recurrence</label>
+              <select
+                className="w-full border px-3 py-2 rounded text-sm"
+                value={recurrence.type}
+                onChange={e =>
+                  setRecurrence({ ...recurrence, type: e.target.value, daysOfWeek: [], interval: 1, unit: 'day' })
+                }
+              >
+                <option value="none">None</option>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="custom">Custom</option>
+              </select>
+            </div>
+            {recurrence.type === 'weekly' && (
+              <div>
+                <label className="block text-xs mb-1">Repeat on:</label>
+                <div className="flex gap-2">
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d, idx) => (
+                    <label key={d} className="flex items-center gap-1 text-xs">
+                      <input
+                        type="checkbox"
+                        checked={recurrence.daysOfWeek.includes(idx)}
+                        onChange={() => {
+                          const days = recurrence.daysOfWeek.includes(idx)
+                            ? recurrence.daysOfWeek.filter(i => i !== idx)
+                            : [...recurrence.daysOfWeek, idx];
+                          setRecurrence({ ...recurrence, daysOfWeek: days });
+                        }}
+                      />
+                      {d}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+            {recurrence.type === 'monthly' && (
+              <div className="text-xs text-gray-600">
+                Repeats on day {selectedDate ? Number(selectedDate.split('-')[2]) : ''}
+              </div>
+            )}
+            {recurrence.type === 'custom' && (
+              <div className="flex gap-2 items-center">
+                <span className="text-xs">Every</span>
+                <input
+                  type="number"
+                  min={1}
+                  value={recurrence.interval}
+                  onChange={e => setRecurrence({ ...recurrence, interval: Number(e.target.value) })}
+                  className="w-14 border px-1 py-0.5 rounded text-xs"
+                />
+                <select
+                  value={recurrence.unit}
+                  onChange={e => setRecurrence({ ...recurrence, unit: e.target.value })}
+                  className="border px-1 py-0.5 rounded text-xs"
+                >
+                  <option value="day">day(s)</option>
+                  <option value="week">week(s)</option>
+                  <option value="month">month(s)</option>
+                </select>
+              </div>
+            )}
+            {(recurrence.type !== 'none') && (
+              <div>
+                <label className="block text-xs mb-1">End date (optional)</label>
+                <input
+                  type="date"
+                  value={recurrence.endDate}
+                  onChange={e => setRecurrence({ ...recurrence, endDate: e.target.value })}
+                  className="w-full border px-3 py-2 rounded text-sm"
+                />
+              </div>
+            )}
 
             <button
               type="submit"

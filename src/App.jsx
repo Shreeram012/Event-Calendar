@@ -6,8 +6,8 @@ const App = () => {
   const [events, setEvents] = useState([
 {
   date: '2025-06-27',
-  title: 'Doctor Appointment',
-  description: 'Annual check-up',
+  title: 'Sample Event',
+  description: 'This is a sample event description.',
   time: '10:15'
 }
 ,

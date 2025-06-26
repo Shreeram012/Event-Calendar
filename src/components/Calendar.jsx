@@ -10,6 +10,14 @@ import {
   format,
   parse,
   compareAsc,
+  differenceInCalendarDays,
+  differenceInCalendarWeeks,
+  differenceInCalendarMonths,
+  getDay,
+  getDate,
+  isAfter,
+  isBefore,
+  parseISO,
 } from 'date-fns';
 
 const Calendar = ({ events, selectedDate, onDateClick }) => {
@@ -37,6 +45,48 @@ const Calendar = ({ events, selectedDate, onDateClick }) => {
   let days = [];
   let currentDay = startDate;
 
+  function occursOnDate(event, dateStr) {
+    const { recurrence } = event;
+    if (!recurrence || !recurrence.type || recurrence.type === 'none') return event.date === dateStr;
+
+    const eventStart = parseISO(event.date);
+    const checkDate = parseISO(dateStr);
+
+    if (recurrence.endDate && isAfter(checkDate, parseISO(recurrence.endDate))) return false;
+    if (isBefore(checkDate, eventStart)) return false;
+
+    switch (recurrence.type) {
+      case 'daily': {
+        const diff = differenceInCalendarDays(checkDate, eventStart);
+        return diff >= 0;
+      }
+      case 'weekly': {
+        const diff = differenceInCalendarWeeks(checkDate, eventStart);
+        return (
+          diff >= 0 &&
+          recurrence.daysOfWeek &&
+          recurrence.daysOfWeek.includes(getDay(checkDate))
+        );
+      }
+      case 'monthly': {
+        return getDate(checkDate) === getDate(eventStart);
+      }
+      case 'custom': {
+        let diff;
+        if (recurrence.unit === 'day') {
+          diff = differenceInCalendarDays(checkDate, eventStart);
+        } else if (recurrence.unit === 'week') {
+          diff = differenceInCalendarWeeks(checkDate, eventStart);
+        } else if (recurrence.unit === 'month') {
+          diff = differenceInCalendarMonths(checkDate, eventStart);
+        }
+        return diff >= 0 && diff % recurrence.interval === 0;
+      }
+      default:
+        return false;
+    }
+  }
+
   while (currentDay <= endDate) {
     for (let i = 0; i < 7; i++) {
       const dateString = format(currentDay, 'yyyy-MM-dd');
@@ -45,7 +95,7 @@ const Calendar = ({ events, selectedDate, onDateClick }) => {
       const isSelected = selectedDate && isSameDay(currentDay, new Date(selectedDate));
 
       const dayEvents = events
-        .filter(e => e.date === dateString)
+        .filter(e => occursOnDate(e, dateString))
         .sort((a, b) =>
           compareAsc(
             parse(a.time, 'HH:mm', new Date()),
