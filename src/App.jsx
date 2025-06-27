@@ -8,7 +8,6 @@ import { parseISO } from 'date-fns';
 const STORAGE_KEY = 'event-calendar-events';
 
 const App = () => {
-  // Load events from localStorage on mount
   const [events, setEvents] = useState(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
@@ -30,12 +29,10 @@ const App = () => {
 
   const [selectedDate, setSelectedDate] = useState(null);
 
-  // Persist events to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
   }, [events]);
 
-  // Helper to check for event conflicts (including recurring)
   function occursOnDate(event, dateStr) {
     const { recurrence } = event;
     if (!recurrence || !recurrence.type || recurrence.type === 'none') return event.date === dateStr;
@@ -73,15 +70,13 @@ const App = () => {
     }
   }
 
-  // Drag-and-drop event handler
+
   const handleEventDrop = (event, newDate) => {
-    // Prevent moving recurring events (optional, or handle as you wish)
     if (event.recurrence && event.recurrence.type !== 'none') {
       alert('Recurring events cannot be rescheduled by drag-and-drop.');
       return;
     }
 
-    // Check for time conflict on newDate
     const hasConflict = events.some(e =>
       (e.date === newDate || occursOnDate(e, newDate)) &&
       e.time === event.time &&
@@ -92,7 +87,6 @@ const App = () => {
       return;
     }
 
-    // Update event date
     const idx = events.indexOf(event);
     if (idx !== -1) {
       const updated = [...events];
